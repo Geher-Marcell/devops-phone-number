@@ -1,0 +1,119 @@
+#frontend
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phone-number-app-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phone-number-app
+  template:
+    metadata:
+      labels:
+        app: phone-number-app
+    spec:
+      containers:
+        - name: phone-number-frontend
+          image: ghcr.io/geher-marcell/phone-number-frontend:latest
+          ports:
+          - containerPort: 80
+      imagePullSecrets:
+        - name: ghcr-auth-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phone-number-app-service
+spec:
+  selector:
+    app: phone-number-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+
+#backend
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phone-number-backend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phone-number-backend
+  template:
+    metadata:
+      labels:
+        app: phone-number-backend
+    spec:
+      containers:
+        - name: phone-number-backend
+          image: ghcr.io/geher-marcell/phone-number-backend:latest
+          ports:
+          - containerPort: 3000
+      imagePullSecrets:
+        - name: ghcr-auth-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phone-number-backend-cluster-ip-service
+spec:
+  selector:
+    app: phone-number-backend
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+---
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: phone-number-app-certificate
+spec:
+  secretName: phone-number-app-certificate
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - phone-number-app-gehermarcell.jcloud.jedlik.cloud
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: phone-number-app-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'   
+    
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - phone-number-app-gehermarcell.jcloud.jedlik.cloud
+      secretName: phone-number-app-certificate
+  rules:
+    - host: phone-number-app-gehermarcell.jcloud.jedlik.cloud
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: phone-number-backend-cluster-ip-service
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: phone-number-app-service
+                port:
+                  number: 80
+    
