@@ -62,5 +62,5 @@ jobs:
           kubectl set image deployment/phone-number-backend-deployment \
           phone-number-backend=ghcr.io/geher-marcell/phone-number-backend:${{ env.IMAGE_TAG }}
 
-          kubectl set image deployment/phone-number-frontend-deployment \
+          kubectl set image deployment/phone-number-app-deployment \
           phone-number-frontend=ghcr.io/geher-marcell/phone-number-frontend:${{ env.IMAGE_TAG }}
