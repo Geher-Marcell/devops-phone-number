@@ -45,3 +45,22 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/phone-number-frontend:${{ env.IMAGE_TAG }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/phone-number-frontend:latest
+
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+          
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f deployment.yaml
+
+          kubectl set image deployment/phone-number-backend-deployment \
+          phone-number-backend=ghcr.io/geher-marcell/phone-number-backend:${{ env.IMAGE_TAG }}
+
+          kubectl set image deployment/phone-number-frontend-deployment \
+          phone-number-frontend=ghcr.io/geher-marcell/phone-number-frontend:${{ env.IMAGE_TAG }}
