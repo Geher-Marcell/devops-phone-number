@@ -1,0 +1,14 @@
+### REST Client for Testing
+
+# GET request to fetch mobile providers
+GET http://localhost:3000/api
+
+###
+
+# POST request to validate phone number
+POST http://localhost:3000/api
+Content-Type: application/json
+
+{
+  "phone_number": "+36401234567"
+}

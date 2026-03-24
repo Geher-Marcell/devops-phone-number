@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phone Lookup</title>
+</head>
+<body>
+  <main class="card">
+    <h1>Telefonszám szolgáltató megkereső</h1>
+
+    <label class="field-label" for="phoneInput">Telefonszám</label>
+    <div class="row">
+      <input id="phoneInput" type="text" placeholder="Példa: +36201234567" />
+      <button id="sendBtn" type="button">Küldés</button>
+    </div>
+
+    <div id="response" class="response">Nincs még válasz.</div>
+  </main>
+
+  <script>
+    const input = document.getElementById('phoneInput');
+    const button = document.getElementById('sendBtn');
+    const responseBox = document.getElementById('response');
+
+    function setResponse(message, kind) {
+      responseBox.textContent = message;
+      responseBox.classList.remove('success', 'error');
+      if (kind) {
+        responseBox.classList.add(kind);
+      }
+    }
+
+    async function sendPhoneNumber() {
+      const phone_number = input.value.trim();
+
+      if (!phone_number) {
+        setResponse('Kérjük, adjon meg egy telefonszámot először.', 'error');
+        return;
+      }
+
+      setResponse('Kérés küldése...');
+
+      try {
+        const res = await fetch('http://localhost:3000/api', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ phone_number })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          setResponse(JSON.stringify(data, null, 2), 'error');
+          return;
+        }
+
+        setResponse(JSON.stringify(data.szolgaltato, null, 2), 'success');
+      } catch (error) {
+        setResponse('Kérés sikertelen: ' + error.message, 'error');
+      }
+    }
+
+    button.addEventListener('click', sendPhoneNumber);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        sendPhoneNumber();
+      }
+    });
+  </script>
+</body>
+</html>
