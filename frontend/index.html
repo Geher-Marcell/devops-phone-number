@@ -1,74 +1,623 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Phone Lookup</title>
-</head>
-<body>
-  <main class="card">
-    <h1>Telefonszám szolgáltató megkereső</h1>
+<html lang="hu">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Phone Lookup</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Sora:wght@400;500;600;700&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			:root {
+				--bg-1: #040715;
+				--bg-2: #0b1330;
+				--bg-3: #07181a;
+				--ink: #ecf3ff;
+				--muted: #a7b6d2;
+				--line: rgba(145, 173, 230, 0.27);
+				--accent: #ff6a3d;
+				--accent-strong: #ff9353;
+				--mint: #25e5c7;
+				--danger: #ff5d73;
+				--ok: #3edd92;
+				--radius-lg: 28px;
+				--radius-md: 14px;
+				--shadow: 0 32px 84px rgba(0, 0, 0, 0.65);
+			}
 
-    <label class="field-label" for="phoneInput">Telefonszám</label>
-    <div class="row">
-      <input id="phoneInput" type="text" placeholder="Példa: +36201234567" />
-      <button id="sendBtn" type="button">Küldés</button>
-    </div>
+			* {
+				box-sizing: border-box;
+			}
 
-    <div id="response" class="response">Nincs még válasz.</div>
-  </main>
+			html,
+			body {
+				margin: 0;
+				min-height: 100%;
+			}
 
-  <script>
-    const input = document.getElementById('phoneInput');
-    const button = document.getElementById('sendBtn');
-    const responseBox = document.getElementById('response');
+			body {
+				position: relative;
+				font-family: "Sora", sans-serif;
+				color: var(--ink);
+				color-scheme: dark;
+				background:
+					radial-gradient(
+						circle at 14% -10%,
+						rgba(37, 229, 199, 0.28),
+						transparent 40%
+					),
+					radial-gradient(
+						circle at 88% 112%,
+						rgba(255, 106, 61, 0.24),
+						transparent 36%
+					),
+					linear-gradient(140deg, var(--bg-1), var(--bg-2) 58%, var(--bg-3));
+				overflow-x: hidden;
+				display: grid;
+				align-content: center;
+			}
 
-    function setResponse(message, kind) {
-      responseBox.textContent = message;
-      responseBox.classList.remove('success', 'error');
-      if (kind) {
-        responseBox.classList.add(kind);
-      }
-    }
+			body::before {
+				content: "";
+				position: fixed;
+				inset: 0;
+				pointer-events: none;
+				z-index: 0;
+				background-image: linear-gradient(
+					rgba(187, 214, 255, 0.055) 1px,
+					transparent 1px
+				);
+				background-size: 100% 32px;
+				opacity: 0.35;
+			}
 
-    async function sendPhoneNumber() {
-      const phone_number = input.value.trim();
+			body::after {
+				content: "";
+				position: fixed;
+				inset: 0;
+				z-index: 0;
+				pointer-events: none;
+				background: radial-gradient(
+					circle at center,
+					rgba(255, 255, 255, 0.06),
+					transparent 55%
+				);
+				opacity: 0.5;
+			}
 
-      if (!phone_number) {
-        setResponse('Kérjük, adjon meg egy telefonszámot először.', 'error');
-        return;
-      }
+			.shape {
+				position: fixed;
+				z-index: 0;
+				pointer-events: none;
+				filter: blur(10px);
+				animation: drift 16s ease-in-out infinite alternate;
+			}
 
-      setResponse('Kérés küldése...');
+			.shape-one {
+				width: 360px;
+				height: 360px;
+				left: -130px;
+				top: 30px;
+				border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+				background: radial-gradient(
+					circle at 30% 30%,
+					rgba(37, 229, 199, 0.6),
+					rgba(37, 229, 199, 0.1) 68%,
+					transparent
+				);
+			}
 
-      try {
-        const res = await fetch('/api', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ phone_number })
-        });
+			.shape-two {
+				width: 420px;
+				height: 420px;
+				right: -150px;
+				bottom: 30px;
+				border-radius: 57% 43% 24% 76% / 49% 62% 38% 51%;
+				background: radial-gradient(
+					circle at 40% 35%,
+					rgba(255, 106, 61, 0.6),
+					rgba(255, 106, 61, 0.1) 64%,
+					transparent
+				);
+				animation-delay: 0.8s;
+			}
 
-        const data = await res.json();
+			.grain {
+				position: fixed;
+				inset: 0;
+				z-index: 0;
+				pointer-events: none;
+				opacity: 0.3;
+				background-image: repeating-linear-gradient(
+					45deg,
+					rgba(236, 243, 255, 0.04) 0,
+					rgba(236, 243, 255, 0.04) 1px,
+					transparent 1px,
+					transparent 4px
+				);
+			}
 
-        if (!res.ok) {
-          setResponse(JSON.stringify(data, null, 2), 'error');
-          return;
-        }
+			.app {
+				z-index: 1;
+				position: relative;
+				width: min(1080px, 92vw);
+				margin: 36px auto;
+				display: grid;
+				gap: 28px;
+				grid-template-columns: 1.1fr 1fr;
+				align-items: stretch;
+			}
 
-        setResponse(JSON.stringify(data.szolgaltato, null, 2), 'success');
-      } catch (error) {
-        setResponse('Kérés sikertelen: ' + error.message, 'error');
-      }
-    }
+			.hero,
+			.panel {
+				border-radius: var(--radius-lg);
+				border: 1px solid var(--line);
+				background: linear-gradient(
+					160deg,
+					rgba(12, 21, 44, 0.88),
+					rgba(9, 15, 31, 0.78)
+				);
+				box-shadow: var(--shadow);
+				backdrop-filter: blur(12px);
+				padding: clamp(22px, 3.5vw, 34px);
+				position: relative;
+				overflow: hidden;
+				transition:
+					transform 0.25s ease,
+					border-color 0.25s ease;
+			}
 
-    button.addEventListener('click', sendPhoneNumber);
-    input.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        sendPhoneNumber();
-      }
-    });
-  </script>
-</body>
+			.hero:hover,
+			.panel:hover {
+				transform: translateY(-2px);
+				border-color: rgba(180, 205, 255, 0.44);
+			}
+
+			.hero::before,
+			.panel::before {
+				content: "";
+				position: absolute;
+				inset: -1px;
+				border-radius: inherit;
+				pointer-events: none;
+				border: 1px solid rgba(255, 255, 255, 0.16);
+				mix-blend-mode: screen;
+			}
+
+			.hero::after,
+			.panel::after {
+				content: "";
+				position: absolute;
+				top: -130px;
+				right: -90px;
+				width: 280px;
+				height: 280px;
+				background: radial-gradient(
+					circle,
+					rgba(37, 229, 199, 0.18),
+					transparent 68%
+				);
+				pointer-events: none;
+			}
+
+			.eyebrow {
+				margin: 0 0 10px;
+				display: inline-flex;
+				align-items: center;
+				gap: 10px;
+				letter-spacing: 0.13em;
+				text-transform: uppercase;
+				font-weight: 700;
+				color: var(--mint);
+				font-size: 0.79rem;
+			}
+
+			.eyebrow::before {
+				content: "";
+				display: inline-block;
+				width: 10px;
+				height: 10px;
+				border-radius: 50%;
+				background: var(--mint);
+				box-shadow: 0 0 0 0 rgba(37, 229, 199, 0.7);
+				animation: pulse 2s ease-out infinite;
+			}
+
+			h1 {
+				margin: 0;
+				font-family: "Chakra Petch", sans-serif;
+				font-size: clamp(2rem, 3.8vw, 3.35rem);
+				line-height: 1.06;
+				max-width: 14ch;
+				text-wrap: balance;
+				background: linear-gradient(
+					104deg,
+					#eff6ff 0%,
+					#8effe7 46%,
+					#ffcfa6 100%
+				);
+				-webkit-background-clip: text;
+				background-clip: text;
+				color: transparent;
+				text-shadow: 0 8px 28px rgba(15, 255, 218, 0.09);
+			}
+
+			.lead {
+				margin: 18px 0 22px;
+				font-size: clamp(1rem, 1.4vw, 1.1rem);
+				line-height: 1.6;
+				color: var(--muted);
+				max-width: 42ch;
+			}
+
+			.chips {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+			}
+
+			.chip {
+				border-radius: 999px;
+				border: 1px solid rgba(158, 188, 245, 0.33);
+				padding: 8px 12px;
+				font-size: 0.86rem;
+				font-weight: 600;
+				background: rgba(15, 28, 58, 0.72);
+				color: #e2edff;
+			}
+
+			.field-label {
+				display: block;
+				margin: 2px 0 10px;
+				font-weight: 700;
+				color: var(--ink);
+				letter-spacing: 0.02em;
+			}
+
+			.input-row {
+				display: grid;
+				grid-template-columns: 1fr auto;
+				gap: 10px;
+			}
+
+			input {
+				width: 100%;
+				border: 1px solid rgba(168, 195, 248, 0.35);
+				border-radius: var(--radius-md);
+				padding: 14px 14px;
+				font-size: 1rem;
+				font-family: inherit;
+				background: rgba(4, 10, 24, 0.8);
+				color: var(--ink);
+				transition:
+					border-color 0.2s ease,
+					box-shadow 0.2s ease;
+			}
+
+			input::placeholder {
+				color: rgba(167, 182, 210, 0.9);
+			}
+
+			input:focus-visible {
+				border-color: var(--mint);
+				outline: none;
+				box-shadow: 0 0 0 4px rgba(37, 229, 199, 0.2);
+			}
+
+			.cta {
+				border: 0;
+				border-radius: var(--radius-md);
+				padding: 0 18px;
+				min-height: 50px;
+				font-size: 0.97rem;
+				font-weight: 700;
+				font-family: inherit;
+				color: #111827;
+				cursor: pointer;
+				background: linear-gradient(140deg, var(--mint), #7dfcdc 46%, #b9fdf0);
+				box-shadow: 0 16px 34px rgba(20, 240, 206, 0.28);
+				transition:
+					transform 0.2s ease,
+					box-shadow 0.2s ease;
+			}
+
+			.cta:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 24px 36px rgba(20, 240, 206, 0.32);
+			}
+
+			.cta:disabled {
+				cursor: wait;
+				opacity: 0.85;
+				transform: none;
+				box-shadow: none;
+			}
+
+			.hint {
+				margin: 10px 0 0;
+				color: var(--muted);
+				font-size: 0.9rem;
+			}
+
+			.quick {
+				margin: 16px 0 0;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.quick-btn {
+				border: 1px solid rgba(158, 188, 245, 0.38);
+				border-radius: 999px;
+				padding: 7px 12px;
+				font-size: 0.84rem;
+				font-weight: 700;
+				font-family: inherit;
+				color: var(--ink);
+				background: rgba(12, 25, 52, 0.7);
+				cursor: pointer;
+				transition:
+					background-color 0.2s ease,
+					border-color 0.2s ease,
+					transform 0.2s ease;
+			}
+
+			.quick-btn:hover {
+				border-color: rgba(37, 229, 199, 0.7);
+				background: rgba(14, 37, 70, 0.92);
+				transform: translateY(-1px);
+			}
+
+			.response {
+				margin-top: 18px;
+				min-height: 72px;
+				border-radius: var(--radius-md);
+				border: 1px solid rgba(158, 188, 245, 0.28);
+				background: rgba(6, 13, 31, 0.82);
+				padding: 14px;
+				font-size: 0.97rem;
+				line-height: 1.45;
+				color: var(--ink);
+				white-space: pre-wrap;
+				transition:
+					border-color 0.2s ease,
+					background-color 0.2s ease;
+			}
+
+			.response.loading {
+				border-color: rgba(37, 229, 199, 0.54);
+				background: rgba(37, 229, 199, 0.12);
+				color: #b9fff1;
+			}
+
+			.response.success {
+				border-color: rgba(62, 221, 146, 0.58);
+				background: rgba(62, 221, 146, 0.13);
+				color: #bfffdc;
+				font-weight: 700;
+			}
+
+			.response.error {
+				border-color: rgba(255, 93, 115, 0.6);
+				background: rgba(255, 93, 115, 0.13);
+				color: #ffd3da;
+			}
+
+			.reveal {
+				opacity: 0;
+				animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+				animation-delay: var(--delay, 0s);
+			}
+
+			@keyframes rise {
+				from {
+					opacity: 0;
+					transform: translateY(20px) scale(0.98);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0) scale(1);
+				}
+			}
+
+			@keyframes drift {
+				from {
+					transform: translate3d(0, 0, 0) rotate(0deg);
+				}
+				to {
+					transform: translate3d(12px, -18px, 0) rotate(5deg);
+				}
+			}
+
+			@keyframes pulse {
+				0% {
+					box-shadow: 0 0 0 0 rgba(37, 229, 199, 0.7);
+				}
+				70% {
+					box-shadow: 0 0 0 12px rgba(37, 229, 199, 0);
+				}
+				100% {
+					box-shadow: 0 0 0 0 rgba(37, 229, 199, 0);
+				}
+			}
+
+			@media (max-width: 960px) {
+				.app {
+					grid-template-columns: 1fr;
+				}
+
+				h1 {
+					max-width: none;
+				}
+			}
+
+			@media (max-width: 620px) {
+				.input-row {
+					grid-template-columns: 1fr;
+				}
+
+				.cta {
+					width: 100%;
+				}
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				.shape,
+				.cta {
+					animation: none;
+					transition: none;
+				}
+
+				.eyebrow::before {
+					animation: none;
+				}
+
+				.reveal {
+					animation: none;
+					opacity: 1;
+					transform: none;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="shape shape-one" aria-hidden="true"></div>
+		<div class="shape shape-two" aria-hidden="true"></div>
+		<div class="grain" aria-hidden="true"></div>
+
+		<main class="app">
+			<section class="hero reveal" style="--delay: 0.06s">
+				<p class="eyebrow">Phone Signal Lab</p>
+				<h1>Találd meg a szolgáltatót egy pillanat alatt.</h1>
+				<p class="lead">
+					Add meg a telefonszámot, és azonnal visszakapod, melyik szolgáltatóhoz
+					tartozik. Gyors, tiszta, és mobilon is kényelmes.
+				</p>
+				<div class="chips" aria-hidden="true">
+					<span class="chip">+36 és 06 formátum</span>
+					<span class="chip">Valós idejű API</span>
+					<span class="chip">Egykattintásos minták</span>
+				</div>
+			</section>
+
+			<section class="panel reveal" style="--delay: 0.2s">
+				<form id="lookupForm" novalidate>
+					<label class="field-label" for="phoneInput">Telefonszám</label>
+					<div class="input-row">
+						<input
+							id="phoneInput"
+							type="text"
+							inputmode="tel"
+							autocomplete="tel"
+							placeholder="Példa: +36 20 123 4567"
+							aria-describedby="phoneHint"
+						/>
+						<button id="sendBtn" class="cta" type="submit">
+							Szolgáltató keresése
+						</button>
+					</div>
+					<p id="phoneHint" class="hint">
+						Használhatsz +36 vagy 06 előhívót is.
+					</p>
+
+					<div class="quick">
+						<button type="button" class="quick-btn" data-number="+36201234567">
+							Yettel minta
+						</button>
+						<button type="button" class="quick-btn" data-number="+36301234567">
+							Telekom minta
+						</button>
+						<button type="button" class="quick-btn" data-number="+36701234567">
+							Vodafone/One minta
+						</button>
+					</div>
+				</form>
+
+				<div id="response" class="response" role="status" aria-live="polite">
+					Nincs még válasz.
+				</div>
+			</section>
+		</main>
+
+		<script>
+			const form = document.getElementById("lookupForm");
+			const input = document.getElementById("phoneInput");
+			const button = document.getElementById("sendBtn");
+			const responseBox = document.getElementById("response");
+			const quickButtons = document.querySelectorAll(".quick-btn");
+
+			function setResponse(message, kind) {
+				responseBox.textContent = message;
+				responseBox.classList.remove("success", "error", "loading");
+				if (kind) {
+					responseBox.classList.add(kind);
+				}
+			}
+
+			function parseErrorMessage(data) {
+				if (!data || typeof data !== "object") {
+					return "Ismeretlen hiba történt.";
+				}
+
+				return data.error || JSON.stringify(data, null, 2);
+			}
+
+			async function sendPhoneNumber() {
+				const phone_number = input.value.trim();
+
+				if (!phone_number) {
+					setResponse("Kérjük, adj meg egy telefonszámot először.", "error");
+					return;
+				}
+
+				button.disabled = true;
+				setResponse("Kérés küldése...", "loading");
+
+				try {
+					const res = await fetch("/api", {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ phone_number }),
+					});
+
+					let data = null;
+					try {
+						data = await res.json();
+					} catch {
+						data = null;
+					}
+
+					if (!res.ok) {
+						setResponse(parseErrorMessage(data), "error");
+						return;
+					}
+
+					const provider =
+						data && data.szolgaltato ? data.szolgaltato : "Ismeretlen";
+					setResponse("Találat: " + provider, "success");
+				} catch (error) {
+					setResponse("Kérés sikertelen: " + error.message, "error");
+				} finally {
+					button.disabled = false;
+				}
+			}
+
+			form.addEventListener("submit", (event) => {
+				event.preventDefault();
+				sendPhoneNumber();
+			});
+
+			quickButtons.forEach((quickButton) => {
+				quickButton.addEventListener("click", () => {
+					input.value = quickButton.dataset.number;
+					sendPhoneNumber();
+				});
+			});
+		</script>
+	</body>
 </html>
