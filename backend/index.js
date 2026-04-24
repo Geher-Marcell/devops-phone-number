@@ -8,6 +8,7 @@ const szolgaltatokMobilszama = {
 	Telekom: 30,
 	Netfone: 31,
 	Digi: 50,
+	Jedlik: 69,
 	"Vodafone/One": 70,
 };
 
